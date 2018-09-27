@@ -80,6 +80,8 @@ namespace SecureMVC5_DLT.Controllers
             {
                 if (!await UserManager.IsEmailConfirmedAsync(user.Id))
                 {
+
+                    string callbackUrl = await SendEmailConfirmationTokenAsync(user.Id, "Confirm your account-Resend");
                     ViewBag.errorMessage = "You must have a confirmed email to log on.";
                     return View("Error");
                 }
@@ -170,18 +172,7 @@ namespace SecureMVC5_DLT.Controllers
                     // Comment the following line to prevent log in until the user is confirmed.
                     // await SignInManager.SignInAsync(user, isPersistent:false, rememberBrowser:false);
 
-
-                    await SignInManager.SignInAsync(user, isPersistent: false, rememberBrowser: false);
-
-                    string code = await UserManager.GenerateEmailConfirmationTokenAsync(user.Id);
-                    var callbackUrl = Url.Action("ConfirmEmail", "Account",
-                        new { userId = user.Id, code = code }, protocol: Request.Url.Scheme);
-                    await UserManager.SendEmailAsync(user.Id,
-                        "Confirm your account", "Please confirm your account by clicking <a href=\""
-                                                + callbackUrl + "\">here</a>");
-
-                    // Uncomment to debug locally
-                    // TempData["ViewBagLink"] = callbackUrl;
+                    string callbackUrl = await SendEmailConfirmationTokenAsync(user.Id, "Confirm your account");
 
                     ViewBag.Message = "Check your email and confirm your account, you must be confirmed "
                                       + "before you can log in";
@@ -445,6 +436,8 @@ namespace SecureMVC5_DLT.Controllers
             base.Dispose(disposing);
         }
 
+
+
         #region Helpers
         // Used for XSRF protection when adding external logins
         private const string XsrfKey = "XsrfId";
@@ -503,5 +496,16 @@ namespace SecureMVC5_DLT.Controllers
             }
         }
         #endregion
+        private async Task<string> SendEmailConfirmationTokenAsync(string userID, string subject)
+        {
+            string code = await UserManager.GenerateEmailConfirmationTokenAsync(userID);
+            var callbackUrl = Url.Action("ConfirmEmail", "Account",
+                new { userId = userID, code = code }, protocol: Request.Url.Scheme);
+            await UserManager.SendEmailAsync(userID, subject,
+                "Please confirm your account by clicking <a href=\"" + callbackUrl + "\">here</a>");
+
+
+            return callbackUrl;
+        }
     }
 }
